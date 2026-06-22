@@ -1,4 +1,4 @@
-import type { Project, Dependency, ScheduleNode, ScheduleResult, ItemLevel } from '../types';
+import type { Project, Version, Phase, Task, Dependency, ScheduleNode, ScheduleResult, ItemLevel } from '../types';
 import { nodeKey } from '../types';
 
 function teFromPert(o: number, m: number, p: number) {
@@ -6,6 +6,85 @@ function teFromPert(o: number, m: number, p: number) {
 }
 function varianceFromPert(o: number, p: number) {
   return Math.pow((p - o) / 6, 2);
+}
+
+/**
+ * Compute schedule for a single project's phases and tasks.
+ * Phases (and tasks within them) are treated as nodes.
+ * Phase-level deps are intra-project deps with predecessorLevel/successorLevel === 'phase'.
+ */
+export function computeProjectSchedule(
+  project: Project,
+  phases: Phase[],
+  tasks: Task[],
+  deps: Dependency[],
+): ScheduleResult {
+  const nodes = new Map<string, ScheduleNode>();
+
+  // Build phase nodes
+  for (const ph of phases) {
+    const key = nodeKey('phase', ph.id);
+    let te: number;
+    let variance: number | null = null;
+    let estimatePending = false;
+
+    if (ph.pertO != null && ph.pertM != null && ph.pertP != null) {
+      te = teFromPert(ph.pertO, ph.pertM, ph.pertP);
+      variance = varianceFromPert(ph.pertO, ph.pertP);
+    } else if (ph.startDate && ph.endDate) {
+      const s = new Date(ph.startDate).getTime();
+      const e = new Date(ph.endDate).getTime();
+      te = Math.max(0, (e - s) / (1000 * 60 * 60 * 24 * 7));
+      estimatePending = true;
+    } else {
+      te = 1;
+      estimatePending = true;
+    }
+
+    nodes.set(key, {
+      id: ph.id, level: 'phase', name: ph.label,
+      te, variance, estimatePending,
+      ES: 0, EF: 0, LS: 0, LF: 0, slack: 0, isCritical: false,
+      owner: ph.owner, startDate: ph.startDate, endDate: ph.endDate,
+      pertO: ph.pertO, pertM: ph.pertM, pertP: ph.pertP,
+    });
+  }
+
+  // Build task nodes
+  for (const t of tasks) {
+    const key = nodeKey('task', t.id);
+    let te: number;
+    let variance: number | null = null;
+    let estimatePending = false;
+
+    if (t.optimistic != null && t.mostLikely != null && t.pessimistic != null) {
+      te = teFromPert(t.optimistic, t.mostLikely, t.pessimistic);
+      variance = varianceFromPert(t.optimistic, t.pessimistic);
+    } else {
+      te = 1;
+      estimatePending = true;
+    }
+
+    nodes.set(key, {
+      id: t.id, level: 'task', name: t.name,
+      te, variance, estimatePending,
+      ES: 0, EF: 0, LS: 0, LF: 0, slack: 0, isCritical: false,
+      owner: t.owner,
+      pertO: t.optimistic, pertM: t.mostLikely, pertP: t.pessimistic,
+    });
+  }
+
+  // Filter intra-project deps (phase↔phase, task↔task, phase↔task)
+  const intraDeps = deps.filter(d =>
+    (d.predecessorLevel === 'phase' || d.predecessorLevel === 'task') &&
+    (d.successorLevel === 'phase' || d.successorLevel === 'task'),
+  );
+
+  return runSchedule(nodes, intraDeps.map(d => ({
+    from: nodeKey(d.predecessorLevel, d.predecessorId),
+    to: nodeKey(d.successorLevel, d.successorId),
+    lag: d.lagDays / 7,
+  })));
 }
 
 /**

@@ -124,3 +124,66 @@
 }
 
 .wsBtn:hover { text-decoration: underline; }
+
+/* Project list in sidebar */
+.projectsToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 12px 16px 4px;
+}
+.projectsToggle:hover .sectionLabel { color: var(--text-muted); }
+
+.toggleChevron {
+  font-size: 10px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+}
+
+.projectItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 16px 5px 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  font-size: 11px;
+  text-decoration: none;
+  font-family: var(--sans);
+  border-left: 2px solid transparent;
+  overflow: hidden;
+}
+.projectItem:hover { background: var(--surface-2); color: var(--text); }
+.projectItem.active { background: var(--accent-dim); color: var(--text); border-left-color: var(--accent); }
+
+.projectDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.projectItemName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--critical);
+  flex-shrink: 0;
+}

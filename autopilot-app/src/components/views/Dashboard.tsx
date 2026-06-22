@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import type { Project } from '../../types';
 import styles from './Dashboard.module.css';
@@ -40,8 +41,8 @@ export function Dashboard({ onEditProject, onNewProject }: Props) {
   }
 
   const sorted = [...projects].sort((a, b) => {
-    const av = (a as Record<string, unknown>)[sortKey] ?? 0;
-    const bv = (b as Record<string, unknown>)[sortKey] ?? 0;
+    const av = (a as unknown as Record<string, unknown>)[sortKey] ?? 0;
+    const bv = (b as unknown as Record<string, unknown>)[sortKey] ?? 0;
     if (av < bv) return -1 * sortDir;
     if (av > bv) return 1 * sortDir;
     return 0;
@@ -113,10 +114,15 @@ export function Dashboard({ onEditProject, onNewProject }: Props) {
 }
 
 function ProjectRow({ project: p, projectEnd, onEdit }: { project: Project; projectEnd: number; onEdit: () => void }) {
+  const navigate = useNavigate();
   const weight = projectEnd > 0 ? Math.min(100, ((p.te ?? 0) / projectEnd) * 100) : 0;
 
   return (
-    <tr className={`${styles.row} ${p.isCritical ? styles.critRow : ''}`} onClick={onEdit}>
+    <tr
+      className={`${styles.row} ${p.isCritical ? styles.critRow : ''}`}
+      onClick={() => navigate(`/project/${p.id}`)}
+      style={{ cursor: 'pointer' }}
+    >
       <td>
         <div className={styles.projectName}>
           <span className={styles.dot} style={{ background: p.color }} />

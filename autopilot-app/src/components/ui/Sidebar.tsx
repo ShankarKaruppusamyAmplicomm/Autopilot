@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import styles from './Sidebar.module.css';
@@ -13,6 +14,8 @@ const NAV = [
 export function Sidebar() {
   const workspace = useStore(s => s.workspace);
   const renameWorkspace = useStore(s => s.renameWorkspace);
+  const projects = useStore(s => s.projects);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
 
   function handleRename() {
     const name = prompt('Workspace name:', workspace?.name ?? '');
@@ -41,6 +44,36 @@ export function Sidebar() {
             {item.label}
           </NavLink>
         ))}
+
+        {projects.length > 0 && (
+          <>
+            <button
+              className={styles.projectsToggle}
+              onClick={() => setProjectsExpanded(v => !v)}
+            >
+              <span className={styles.sectionLabel} style={{ marginBottom: 0 }}>Projects</span>
+              <span className={styles.toggleChevron}>{projectsExpanded ? '▾' : '▸'}</span>
+            </button>
+
+            {projectsExpanded && (
+              <div className={styles.projectList}>
+                {projects.map(p => (
+                  <NavLink
+                    key={p.id}
+                    to={`/project/${p.id}`}
+                    className={({ isActive }) =>
+                      `${styles.projectItem} ${isActive ? styles.active : ''}`
+                    }
+                  >
+                    <span className={styles.projectDot} style={{ background: p.color }} />
+                    <span className={styles.projectItemName}>{p.name}</span>
+                    {p.isCritical && <span className={styles.cpDot} title="Critical path" />}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </nav>
 
       <div className={styles.workspace}>
