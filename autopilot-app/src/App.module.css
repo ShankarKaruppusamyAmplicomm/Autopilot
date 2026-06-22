@@ -1,0 +1,46 @@
+.shell {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.splash {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--ground);
+}
+
+.splashLogo {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -1px;
+  color: var(--text);
+}
+
+.splashLogo span { color: var(--accent); }
+
+.splashSub {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}

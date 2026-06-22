@@ -1,0 +1,80 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.toolbar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.viewTitle { font-weight: 600; font-size: 13px; }
+.viewSub   { font-size: 11px; color: var(--text-muted); }
+
+.container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.zoomBtns {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoomBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  font-family: var(--mono);
+  transition: color var(--transition), background var(--transition);
+}
+.zoomBtn:hover { color: var(--text); background: var(--surface-2); }
+
+.legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--sans);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+}
+.legendItem:last-child { margin-bottom: 0; }
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}

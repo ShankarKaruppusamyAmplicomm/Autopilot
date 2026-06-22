@@ -1,0 +1,122 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 500px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition);
+}
+.close:hover { color: var(--text); background: var(--surface-2); }
+
+.body {
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.pertRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.pertHint {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-family: var(--sans);
+}
+
+.pertResult {
+  margin-top: 8px;
+  padding: 9px 12px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.pertResult strong { color: var(--accent); }
+
+.textarea {
+  resize: vertical;
+  min-height: 52px;
+  font-family: var(--mono);
+}
+
+.colorPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition), border-color var(--transition);
+}
+
+.swatch:hover { transform: scale(1.1); }
+.swatch.selected { border-color: var(--text); transform: scale(1.15); }
+
+.error {
+  background: var(--critical-dim);
+  border: 1px solid var(--critical);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--critical);
+  margin-top: 8px;
+}
+
+.footer {
+  padding: 13px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
