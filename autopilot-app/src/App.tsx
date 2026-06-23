@@ -36,8 +36,10 @@ export default function App() {
 
   const isModalOpen = modalProjectId !== undefined;
 
+  const basename = import.meta.env.BASE_URL;
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <div className={styles.shell}>
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
         <div className={styles.main}>
