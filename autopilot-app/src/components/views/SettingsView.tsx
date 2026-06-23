@@ -6,6 +6,7 @@ import {
 } from '../../db';
 import type { BackupVersion, VisitorRecord } from '../../types';
 import styles from './SettingsView.module.css';
+import { fetchServerBackups, type ServerBackup } from '../../api/client';
 
 export function SettingsView() {
   const workspace      = useStore(s => s.workspace);
@@ -28,6 +29,8 @@ export function SettingsView() {
   const [saveLabel, setSaveLabel]       = useState('');
   const [saving, setSaving]             = useState(false);
 
+  const [serverBackups, setServerBackups] = useState<ServerBackup[]>([]);
+
   // Visitor analytics
   const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
 
@@ -37,8 +40,15 @@ export function SettingsView() {
   const [clearError, setClearError]         = useState('');
   const [clearing, setClearing]             = useState(false);
 
-  // SHA-256 of "AutopilotAdminDelete" — never store the plain text
-  const ADMIN_HASH = '7be9377951db0256557aa6c4dd8a868e800b12eab51d0af476a50a45a691828e';
+  // Publish to server modal
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishPassword, setPublishPassword]   = useState('');
+  const [publishError, setPublishError]         = useState('');
+  const [publishSuccess, setPublishSuccess]     = useState('');
+  const [publishing, setPublishing]             = useState(false);
+
+  // SHA-256 of admin password — never store the plain text
+  const ADMIN_HASH = 'e3f47090f2ec633775b3058b412885d0eb99f53b02b6c1ac00f84580ce4867a7';
 
   useEffect(() => {
     loadBackups();
@@ -47,6 +57,7 @@ export function SettingsView() {
 
   async function loadBackups() {
     setBackups(await listBackupVersions());
+    fetchServerBackups().then(setServerBackups).catch(() => {});
   }
 
   async function handleRename() {
@@ -113,6 +124,23 @@ export function SettingsView() {
     await loadBackups();
   }
 
+  async function handlePublishConfirm() {
+    if (!publishPassword) { setPublishError('Password is required.'); return; }
+    setPublishing(true);
+    setPublishError('');
+    setPublishSuccess('');
+    try {
+      const result = await publishSeedFile(publishPassword);
+      if (result.serverOk) {
+        setPublishSuccess('Published to server successfully. seed.json also downloaded.');
+      } else {
+        setPublishError(result.error ?? 'Server publish failed. seed.json was still downloaded.');
+      }
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   const approxKB = Math.round(new Blob([JSON.stringify({ projects, dependencies })]).size / 1024);
 
   return (
@@ -152,6 +180,7 @@ export function SettingsView() {
           </div>
           <div className={styles.cardDesc} style={{ marginBottom: 12 }}>
             Each saved version captures a full snapshot of the portfolio. Versions are stored locally in your browser and can be downloaded as JSON files.
+            {serverBackups.length > 0 && <> &nbsp;·&nbsp; <strong>{serverBackups.length}</strong> version{serverBackups.length !== 1 ? 's' : ''} also synced to server.</>}
           </div>
 
           {backups.length === 0 ? (
@@ -231,8 +260,8 @@ export function SettingsView() {
               </div>
             </div>
           </div>
-          <button className="btn btn-primary" style={{ marginTop: 6 }} onClick={() => publishSeedFile()}>
-            Publish seed.json
+          <button className="btn btn-primary" style={{ marginTop: 6 }} onClick={() => { setPublishPassword(''); setPublishError(''); setPublishSuccess(''); setShowPublishModal(true); }}>
+            Publish to Server
           </button>
         </section>
 
@@ -409,6 +438,46 @@ export function SettingsView() {
                 disabled={!saveName.trim() || saving}
               >
                 {saving ? 'Saving…' : 'Save Version'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish to Server Modal */}
+      {showPublishModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowPublishModal(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Publish to Server</div>
+            <div className={styles.modalSubtitle}>
+              This will push the current portfolio snapshot to the backend API as the canonical seed,
+              and also download a local <code className={styles.code}>seed.json</code> file.
+              Enter the admin password to continue.
+            </div>
+
+            <div className={styles.modalField}>
+              <label className="form-label">Admin Password *</label>
+              <input
+                className="form-input"
+                type="password"
+                placeholder="Enter password"
+                value={publishPassword}
+                onChange={e => { setPublishPassword(e.target.value); setPublishError(''); setPublishSuccess(''); }}
+                onKeyDown={e => e.key === 'Enter' && handlePublishConfirm()}
+                autoFocus
+              />
+              {publishError && <div className={styles.errorMsg}>{publishError}</div>}
+              {publishSuccess && <div className={styles.successMsg}>{publishSuccess}</div>}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className="btn btn-ghost" onClick={() => setShowPublishModal(false)}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                onClick={handlePublishConfirm}
+                disabled={!publishPassword || publishing}
+              >
+                {publishing ? 'Publishing…' : 'Publish'}
               </button>
             </div>
           </div>

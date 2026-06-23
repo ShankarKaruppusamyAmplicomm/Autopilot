@@ -4,6 +4,7 @@ import { useStore } from './store/useStore';
 import { Sidebar } from './components/ui/Sidebar';
 import { Topbar } from './components/ui/Topbar';
 import { SaveReminder } from './components/ui/SaveReminder';
+import { AuthPromptModal } from './components/ui/AuthPromptModal';
 import { Dashboard } from './components/views/Dashboard';
 import { GanttView } from './components/views/GanttView';
 import { PertView } from './components/views/PertView';
@@ -66,6 +67,7 @@ export default function App() {
       )}
 
       <SaveReminder />
+      <AuthPromptModal />
     </BrowserRouter>
   );
 }

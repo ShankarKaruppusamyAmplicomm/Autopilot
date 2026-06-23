@@ -81,6 +81,66 @@ function PhaseForm({ projectId, onDone }: { projectId: number; onDone: () => voi
   );
 }
 
+function EditTaskForm({ task, phases, onDone }: { task: Task; phases: Phase[]; onDone: () => void }) {
+  const updateTask = useStore(s => s.updateTask);
+  const [name, setName]   = useState(task.name);
+  const [owner, setOwner] = useState(task.owner ?? '');
+  const [phaseId, setPhaseId] = useState(String(task.phaseId));
+  const [pertO, setPertO] = useState(task.optimistic  != null ? String(task.optimistic)  : '');
+  const [pertM, setPertM] = useState(task.mostLikely  != null ? String(task.mostLikely)  : '');
+  const [pertP, setPertP] = useState(task.pessimistic != null ? String(task.pessimistic) : '');
+  const [err, setErr] = useState('');
+
+  async function save() {
+    if (!name.trim()) { setErr('Task name is required.'); return; }
+    const o = parseFloat(pertO), m = parseFloat(pertM), p = parseFloat(pertP);
+    const hasPert = !isNaN(o) && !isNaN(m) && !isNaN(p);
+    await updateTask(task.id, {
+      name: name.trim(),
+      owner: owner.trim() || undefined,
+      phaseId: parseInt(phaseId),
+      optimistic:  hasPert ? o : undefined,
+      mostLikely:  hasPert ? m : undefined,
+      pessimistic: hasPert ? p : undefined,
+    });
+    onDone();
+  }
+
+  return (
+    <div className={styles.inlineForm}>
+      <div className={styles.formRow3}>
+        <div className="form-group">
+          <label className="form-label">Task Name *</label>
+          <input className="form-input" value={name} onChange={e => setName(e.target.value)} autoFocus />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Phase *</label>
+          <select className="form-input" value={phaseId} onChange={e => setPhaseId(e.target.value)}>
+            {phases.map(ph => <option key={ph.id} value={ph.id}>{ph.label}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Owner</label>
+          <input className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Shankar" />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">PERT Estimate (weeks) — O / M / P</label>
+        <div className={styles.pertRow}>
+          <input className="form-input" type="number" min="0" step="0.5" placeholder="Optimistic"  value={pertO} onChange={e => setPertO(e.target.value)} />
+          <input className="form-input" type="number" min="0" step="0.5" placeholder="Most Likely"  value={pertM} onChange={e => setPertM(e.target.value)} />
+          <input className="form-input" type="number" min="0" step="0.5" placeholder="Pessimistic"  value={pertP} onChange={e => setPertP(e.target.value)} />
+        </div>
+      </div>
+      {err && <div className={styles.error}>{err}</div>}
+      <div className={styles.formActions}>
+        <button className="btn btn-ghost btn-sm" onClick={onDone}>Cancel</button>
+        <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
+      </div>
+    </div>
+  );
+}
+
 function TaskForm({ projectId, phases, onDone }: { projectId: number; phases: Phase[]; onDone: () => void }) {
   const addTask = useStore(s => s.addTask);
   const [phaseId, setPhaseId] = useState(phases[0]?.id ? String(phases[0].id) : '');
@@ -180,6 +240,7 @@ export function ProjectActivitiesView({ projectId }: Props) {
 
   const [showPhaseForm, setShowPhaseForm] = useState(false);
   const [showTaskForm, setShowTaskForm]   = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
 
   // Dep add form
   const [depFrom, setDepFrom] = useState('');
@@ -265,16 +326,25 @@ export function ProjectActivitiesView({ projectId }: Props) {
                       <button className={styles.deleteBtn} onClick={() => { if (confirm(`Delete phase "${ph.label}"?`)) deletePhase(ph.id); }} title="Delete phase">×</button>
                     </div>
                     {phaseTasks.map(t => (
-                      <div key={t.id} className={styles.taskRow}>
-                        <span className={styles.taskIndent}>↳</span>
-                        <span className={styles.taskName}>{t.name}</span>
-                        {t.owner && <span className={styles.owner}>{t.owner}</span>}
-                        {(t.optimistic != null && t.mostLikely != null && t.pessimistic != null) && (
-                          <span className={styles.pertBadge}>
-                            te {((t.optimistic + 4 * t.mostLikely + t.pessimistic) / 6).toFixed(1)}w
-                          </span>
+                      <div key={t.id}>
+                        {editingTaskId === t.id ? (
+                          <div className={styles.taskEditWrap}>
+                            <EditTaskForm task={t} phases={phases} onDone={() => setEditingTaskId(null)} />
+                          </div>
+                        ) : (
+                          <div className={styles.taskRow}>
+                            <span className={styles.taskIndent}>↳</span>
+                            <span className={styles.taskName}>{t.name}</span>
+                            {t.owner && <span className={styles.owner}>{t.owner}</span>}
+                            {(t.optimistic != null && t.mostLikely != null && t.pessimistic != null) && (
+                              <span className={styles.pertBadge}>
+                                te {((t.optimistic + 4 * t.mostLikely + t.pessimistic) / 6).toFixed(1)}w
+                              </span>
+                            )}
+                            <button className={styles.editBtn} onClick={() => setEditingTaskId(t.id)} title="Edit task">✎</button>
+                            <button className={styles.deleteBtn} onClick={() => { if (confirm(`Delete task "${t.name}"?`)) deleteTask(t.id); }} title="Delete task">×</button>
+                          </div>
                         )}
-                        <button className={styles.deleteBtn} onClick={() => { if (confirm(`Delete task "${t.name}"?`)) deleteTask(t.id); }} title="Delete task">×</button>
                       </div>
                     ))}
                   </div>

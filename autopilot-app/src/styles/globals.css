@@ -7,8 +7,8 @@
   --border:       #30363D;
   --border-light: #21262D;
   --text:         #E6EDF3;
-  --text-muted:   #8B949E;
-  --text-dim:     #6E7681;
+  --text-muted:   #FFFFFF;
+  --text-dim:     #FFFFFF;
   --accent:       #6E40C9;
   --accent-hover: #7D52D4;
   --accent-dim:   #2D1F5E;
@@ -45,7 +45,7 @@ body {
   font-family: var(--mono);
   background: var(--ground);
   color: var(--text);
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }

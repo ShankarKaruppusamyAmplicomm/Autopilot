@@ -87,14 +87,13 @@ export async function createBackupVersion(updatedBy: string, label: string): Pro
   const count = await db.backupVersions.count();
   const version = `V${count + 1}`;
   const payload = await snapshot();
-  const entry: Omit<BackupVersion, 'id'> = {
-    version,
-    label,
-    updatedBy,
-    createdAt: new Date().toISOString(),
-    payload,
-  };
+  const entry: Omit<BackupVersion, 'id'> = { version, label, updatedBy, createdAt: new Date().toISOString(), payload };
   const id = await db.backupVersions.add(entry as BackupVersion);
+
+  // Mirror to server best-effort
+  const { createServerBackup } = await import('../api/client');
+  createServerBackup(updatedBy, label, JSON.parse(payload)).catch(() => {});
+
   return { ...entry, id } as BackupVersion;
 }
 
@@ -141,27 +140,12 @@ export async function restoreFromLatestBackup(): Promise<boolean> {
   }
 }
 
-// Restore from the static seed.json file committed to public/data/.
-// This is the cross-browser fallback — works in incognito, new devices,
-// any browser where IndexedDB is empty. Returns true if the file exists
-// and was loaded successfully.
-export async function restoreFromStaticSeed(base: string): Promise<boolean> {
-  try {
-    const url = `${base}data/seed.json`.replace(/\/+/g, '/').replace(':/', '://');
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return false;
-    const data = await res.json();
-    if (!data.projects?.length) return false;
-    await restorePayload(data);
-    return true;
-  } catch {
-    return false;
-  }
-}
+// restoreFromStaticSeed removed — server API (/api/v1/portfolio) is now the
+// primary source of truth. IndexedDB is only an offline cache written by the store.
 
-// Publish the current state as the static seed file.
-// Downloads seed.json — the user commits it to public/data/ and pushes.
-export async function publishSeedFile(): Promise<void> {
+// Publish the current state — downloads seed.json locally and optionally
+// pushes to the backend API as the canonical seed.
+export async function publishSeedFile(adminPassword?: string): Promise<{ serverOk: boolean; error?: string }> {
   const json = await snapshot();
   const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
@@ -169,6 +153,13 @@ export async function publishSeedFile(): Promise<void> {
   a.download = 'seed.json';
   a.click();
   URL.revokeObjectURL(a.href);
+
+  if (adminPassword) {
+    const { publishSeedToServer } = await import('../api/client');
+    const result = await publishSeedToServer(JSON.parse(json), adminPassword);
+    return { serverOk: result.ok, error: result.error };
+  }
+  return { serverOk: false };
 }
 
 // ─── Visitor tracking (local-only) ───────────────────────────────────────────
@@ -185,27 +176,43 @@ function getOrCreateDeviceId(): string {
 
 export async function recordVisit(): Promise<void> {
   const deviceId = getOrCreateDeviceId();
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const locale = navigator.language;
+
+  // Local IndexedDB
   const existing = await db.visitors.where('deviceId').equals(deviceId).first();
   const now = new Date().toISOString();
   if (!existing) {
     await db.visitors.add({
       id: undefined as unknown as number,
-      deviceId,
-      firstSeen: now,
-      lastSeen: now,
-      visitCount: 1,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      locale: navigator.language,
+      deviceId, firstSeen: now, lastSeen: now, visitCount: 1, timezone, locale,
     } as VisitorRecord);
   } else {
-    await db.visitors.update(existing.id, {
-      lastSeen: now,
-      visitCount: (existing.visitCount ?? 1) + 1,
-    });
+    await db.visitors.update(existing.id, { lastSeen: now, visitCount: (existing.visitCount ?? 1) + 1 });
   }
+
+  // Mirror to server (best-effort, non-blocking)
+  const { recordVisitServer } = await import('../api/client');
+  recordVisitServer(deviceId, timezone, locale).catch(() => {});
 }
 
 export async function listVisitors(): Promise<VisitorRecord[]> {
+  // Try server first (has cross-browser data), fall back to local
+  try {
+    const { fetchServerVisitors } = await import('../api/client');
+    const serverVisitors = await fetchServerVisitors();
+    if (serverVisitors.length > 0) {
+      return serverVisitors.map(v => ({
+        id: v.id,
+        deviceId: v.device_id,
+        firstSeen: v.first_seen,
+        lastSeen: v.last_seen,
+        visitCount: v.visit_count,
+        timezone: v.timezone,
+        locale: v.locale,
+      }));
+    }
+  } catch { /* fall through */ }
   return db.visitors.orderBy('firstSeen').reverse().toArray();
 }
 

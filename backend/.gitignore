@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.wrangler/
+.data/
+*.local
+.env
+.env.*
+!.env.example
+*.log
