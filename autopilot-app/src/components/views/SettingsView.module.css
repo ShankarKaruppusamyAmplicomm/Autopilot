@@ -131,3 +131,129 @@
   width: 80px;
   flex-shrink: 0;
 }
+
+/* ── Versioned backup ── */
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sectionTitleRow .sectionTitle { margin-bottom: 0; }
+
+.emptyBackups {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  padding: 16px;
+  text-align: center;
+  background: var(--ground);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.backupTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.backupTable thead th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.backupRow {
+  border-bottom: 1px solid var(--border-light);
+  transition: background 120ms ease;
+}
+.backupRow:last-child { border-bottom: none; }
+.backupRow:hover { background: var(--ground); }
+.backupRow td { padding: 9px 10px; vertical-align: middle; }
+
+.versionTag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+
+.backupLabel { color: var(--text); font-family: var(--sans); }
+.backupUser  { color: var(--text-muted); font-family: var(--sans); }
+.backupDate  { color: var(--text-dim); font-family: var(--sans); font-size: 11px; white-space: nowrap; }
+
+.backupActions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+
+.actionBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--sans);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+  white-space: nowrap;
+}
+.actionBtn:hover { color: var(--accent); border-color: var(--accent); }
+
+.deleteBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  transition: color 120ms ease, background 120ms ease;
+}
+.deleteBtn:hover { color: var(--critical); background: var(--critical-dim); }
+
+/* ── Save version modal ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  width: 440px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+.modalTitle    { font-size: 15px; font-weight: 700; }
+.modalSubtitle { font-size: 11px; color: var(--text-muted); font-family: var(--sans); line-height: 1.5; }
+.modalField    { display: flex; flex-direction: column; gap: 6px; }
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}

@@ -127,7 +127,12 @@ function ProjectRow({ project: p, projectEnd, onEdit }: { project: Project; proj
         <div className={styles.projectName}>
           <span className={styles.dot} style={{ background: p.color }} />
           <span>{p.name}</span>
-          {p.isCritical && <span className="badge badge-cp">CP</span>}
+          {p.isCritical && (
+            <span
+              className="badge badge-cp"
+              title="Critical Path — this project has zero slack. Any delay here directly pushes the portfolio end date."
+            >CP</span>
+          )}
           {p.estimatePending && <span className="badge badge-pending" style={{ fontSize: '8px' }}>est?</span>}
         </div>
       </td>

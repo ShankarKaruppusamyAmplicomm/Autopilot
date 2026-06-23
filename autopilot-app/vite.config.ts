@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // GitHub Pages serves from /Autopilot/ — set base so assets resolve correctly
+  base: '/Autopilot/',
   plugins: [
     react(),
     VitePWA({

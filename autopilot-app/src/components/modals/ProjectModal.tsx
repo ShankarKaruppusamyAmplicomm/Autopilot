@@ -119,7 +119,7 @@ export function ProjectModal({ projectId, onClose }: Props) {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="proj-owner">Owner</label>
-              <input id="proj-owner" className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Saurav" />
+              <input id="proj-owner" className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Shankar" />
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="proj-status">Status</label>

@@ -61,6 +61,9 @@ interface AppState {
   _recompute: () => void;
 }
 
+// Module-level flag — survives StrictMode double-invoke within the same JS module instance
+let _initStarted = false;
+
 export const useStore = create<AppState>((set, get) => ({
   workspace: null,
   projects: [],
@@ -72,14 +75,37 @@ export const useStore = create<AppState>((set, get) => ({
   loading: true,
 
   async init() {
-    const ws = await ensureWorkspace();
+    if (_initStarted) return;
+    _initStarted = true;
+
+    const SEED_VERSION = 5;
+
+    // Deduplicate workspaces — keep only the first, delete the rest
+    const allWs = await db.workspaces.toArray();
+    if (allWs.length > 1) {
+      const extras = allWs.slice(1).map(w => w.id);
+      await db.workspaces.bulkDelete(extras);
+    }
+    let ws = allWs[0] ?? await db.workspaces.get(
+      await db.workspaces.add({ id: undefined as unknown as number, name: 'Truflo AI', createdAt: new Date().toISOString(), schemaVersion: 0 })
+    ) as typeof allWs[0];
+
+    const needsReseed = (ws.schemaVersion ?? 0) < SEED_VERSION;
+    if (needsReseed) {
+      // Wipe everything and re-seed cleanly
+      await db.transaction('rw', [db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
+        await Promise.all([
+          db.projects.clear(), db.versions.clear(),
+          db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
+        ]);
+      });
+      await seedTrufloData(ws.id as number);
+      await db.workspaces.update(ws.id, { schemaVersion: SEED_VERSION });
+      ws = { ...ws, schemaVersion: SEED_VERSION };
+    }
+
     await get()._reload();
     set({ workspace: ws, loading: false });
-    // Seed Truflo AI data if empty
-    if (get().projects.length === 0) {
-      await seedTrufloData(get, ws.id);
-      await get()._reload();
-    }
     get()._recompute();
   },
 
@@ -283,50 +309,70 @@ export const useStore = create<AppState>((set, get) => ({
 
 // ─── SEED DATA ───────────────────────────────────────────────────────────────
 
-const PALETTE = ['#6E40C9','#1F6FEB','#238636','#9E6A03','#DA3633','#58A6FF','#3FB950','#D2A8FF','#F78166','#E3B341','#6E7681','#79C0FF','#A5D6FF','#56D364','#FF7B72','#FFA657','#D29922','#BC8CFF','#30363D'];
-
-const SEED_PROJECTS = [
-  { name: 'Scraping Framework',           owner: 'Saurav',   start: '2026-01-06', end: '2026-03-28', o: 8,  m: 12, p: 18, status: 'on-track' as const },
-  { name: 'Trend Scaling (Airflow)',       owner: 'Saurav',   start: '2026-02-03', end: '2026-04-17', o: 6,  m: 10, p: 16, status: 'on-track' as const },
-  { name: 'Trend Scaling (PySpark)',       owner: 'Saurav',   start: '2026-02-17', end: '2026-05-01', o: 6,  m: 10, p: 16, status: 'at-risk'  as const },
-  { name: 'ClickHouse Migration',          owner: 'Saurav',   start: '2026-01-20', end: '2026-04-03', o: 8,  m: 12, p: 20, status: 'on-track' as const },
-  { name: 'SOV & Discount Visualisation', owner: 'Puneet',   start: '2026-02-10', end: '2026-04-24', o: 4,  m: 7,  p: 12, status: 'on-track' as const },
-  { name: 'DAAS Platform',                owner: 'Puneet',   start: '2026-03-03', end: '2026-05-29', o: 6,  m: 10, p: 16, status: 'pending'  as const },
-  { name: 'VAPT / ISO 27001 / SOC 2',    owner: 'Achin',    start: '2026-01-06', end: '2026-02-27', o: 4,  m: 7,  p: 10, status: 'on-track' as const },
-  { name: 'VAPT Gap-Fix & Release',       owner: 'Achin',    start: '2026-02-24', end: '2026-04-03', o: 3,  m: 5,  p: 8,  status: 'at-risk'  as const },
-  { name: 'Automation Testing',           owner: 'Saurav',   start: '2026-01-06', end: '2026-03-06', o: 4,  m: 7,  p: 10, status: 'on-track' as const },
-  { name: 'Performance Testing',          owner: 'Saurav',   start: '2026-03-03', end: '2026-04-03', o: 3,  m: 5,  p: 8,  status: 'pending'  as const },
-  { name: 'Product Readiness & Launch',   owner: 'Puneet',   start: '2026-04-07', end: '2026-05-15', o: 4,  m: 6,  p: 10, status: 'pending'  as const },
-  { name: 'Truflo AI Revenue',            owner: 'Shankar',  start: '2026-05-19', end: '2026-06-26', o: 3,  m: 5,  p: 8,  status: 'pending'  as const },
-  { name: 'Mobile App MVP',               owner: 'Puneet',   start: '2026-02-17', end: '2026-05-15', o: 8,  m: 12, p: 20, status: 'at-risk'  as const },
-  { name: 'API Gateway v2',               owner: 'Saurav',   start: '2026-01-20', end: '2026-03-13', o: 4,  m: 6,  p: 10, status: 'on-track' as const },
-  { name: 'Data Quality Framework',       owner: 'Saurav',   start: '2026-02-03', end: '2026-04-10', o: 4,  m: 7,  p: 12, status: 'on-track' as const },
-  { name: 'Customer Portal',              owner: 'Puneet',   start: '2026-03-17', end: '2026-05-22', o: 5,  m: 8,  p: 14, status: 'pending'  as const },
-  { name: 'Infrastructure Hardening',     owner: 'Achin',    start: '2026-01-13', end: '2026-03-06', o: 4,  m: 6,  p: 9,  status: 'on-track' as const },
-  { name: 'Analytics Dashboard',          owner: 'Puneet',   start: '2026-02-24', end: '2026-04-17', o: 4,  m: 6,  p: 10, status: 'on-track' as const },
-  { name: 'Compliance Reporting',         owner: 'Achin',    start: '2026-03-31', end: '2026-05-08', o: 3,  m: 5,  p: 8,  status: 'pending'  as const },
+const PALETTE = [
+  '#6E40C9','#1F6FEB','#238636','#9E6A03','#DA3633',
+  '#58A6FF','#3FB950','#D2A8FF','#F78166','#E3B341',
+  '#6E7681','#79C0FF','#A5D6FF',
 ];
 
-const SEED_DEPS = [
-  ['Automation Testing', 'Performance Testing'],
-  ['Performance Testing', 'VAPT Gap-Fix & Release'],
-  ['VAPT / ISO 27001 / SOC 2', 'VAPT Gap-Fix & Release'],
-  ['VAPT Gap-Fix & Release', 'Product Readiness & Launch'],
-  ['DAAS Platform', 'Product Readiness & Launch'],
-  ['Product Readiness & Launch', 'Truflo AI Revenue'],
-  ['Scraping Framework', 'Trend Scaling (Airflow)'],
-  ['Trend Scaling (Airflow)', 'Trend Scaling (PySpark)'],
-  ['ClickHouse Migration', 'DAAS Platform'],
-  ['API Gateway v2', 'Customer Portal'],
-  ['Infrastructure Hardening', 'API Gateway v2'],
-  ['VAPT Gap-Fix & Release', 'Compliance Reporting'],
-  ['Data Quality Framework', 'Analytics Dashboard'],
+// Exact project list from the Truflo AI planning sheet.
+// No PERT estimates — scheduler uses date span and marks EST?.
+// No owners or status — user fills those in via the editor.
+const SEED_PROJECTS: Array<{ name: string; start: string; end: string }> = [
+  { name: 'Truflo AI Revenue',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'Truflo AI (Scale up, QA Automation, NLP Accuracy) / Product Readiness and Launch Action items',
+    start: '2026-05-11', end: '2026-08-31' },
+
+  { name: 'Scrapping Framework',
+    start: '2026-06-02', end: '2026-08-21' },
+
+  { name: 'Rapid Onboarding - Integrations, Portal to Fact & Trending Framework',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'Trend scaling up - Airflow & Pyspark',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'Migration of Trended Data DB to - ClickHouse',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'Jira Workflow and Confluence process (Definition & Implementation)',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'Support Roster for Each team on leave plans',
+    start: '2026-06-02', end: '2026-06-19' },
+
+  { name: 'SOV & Discount data visualization',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'VAPT, ISO 27001, SOC 2',
+    start: '2026-06-02', end: '2026-06-30' },
+
+  { name: 'VAPT Report gap Fix and Release date',
+    start: '2026-06-15', end: '2026-06-30' },
+
+  { name: 'Alerting mechanism',
+    start: '2026-06-02', end: '2026-08-31' },
+
+  { name: 'Automation Testing',
+    start: '2026-06-02', end: '2026-08-31' },
 ];
 
-async function seedTrufloData(
-  get: () => AppState,
-  workspaceId: number,
-) {
+const SEED_DEPS: [string, string][] = [
+  ['VAPT, ISO 27001, SOC 2', 'VAPT Report gap Fix and Release date'],
+  ['VAPT Report gap Fix and Release date',
+   'Truflo AI (Scale up, QA Automation, NLP Accuracy) / Product Readiness and Launch Action items'],
+  ['Automation Testing',
+   'Truflo AI (Scale up, QA Automation, NLP Accuracy) / Product Readiness and Launch Action items'],
+  ['Truflo AI (Scale up, QA Automation, NLP Accuracy) / Product Readiness and Launch Action items',
+   'Truflo AI Revenue'],
+  ['Scrapping Framework', 'Trend scaling up - Airflow & Pyspark'],
+  ['Trend scaling up - Airflow & Pyspark', 'Migration of Trended Data DB to - ClickHouse'],
+  ['SOV & Discount data visualization', 'Truflo AI Revenue'],
+];
+
+async function seedTrufloData(workspaceId: number) {
   const ids: Record<string, number> = {};
   for (let i = 0; i < SEED_PROJECTS.length; i++) {
     const sp = SEED_PROJECTS[i];
@@ -334,15 +380,11 @@ async function seedTrufloData(
       id: undefined as unknown as number,
       workspaceId,
       name: sp.name,
-      owner: sp.owner,
       startDate: sp.start,
       endDate: sp.end,
-      status: sp.status,
+      status: 'pending' as const,
       color: PALETTE[i % PALETTE.length],
       order: i,
-      pertO: sp.o,
-      pertM: sp.m,
-      pertP: sp.p,
     } as Project);
     ids[sp.name] = id;
   }

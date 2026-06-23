@@ -35,7 +35,7 @@ export function computeProjectSchedule(
       const s = new Date(ph.startDate).getTime();
       const e = new Date(ph.endDate).getTime();
       te = Math.max(0, (e - s) / (1000 * 60 * 60 * 24 * 7));
-      estimatePending = true;
+      estimatePending = false;
     } else {
       te = 1;
       estimatePending = true;
@@ -111,7 +111,8 @@ export function computePortfolioSchedule(
       const s = new Date(p.startDate).getTime();
       const e = new Date(p.endDate).getTime();
       te = Math.max(0, (e - s) / (1000 * 60 * 60 * 24 * 7));
-      estimatePending = true;
+      // Duration is known from dates — only flag pending when PERT estimates are also absent
+      estimatePending = false;
     } else {
       te = 1;
       estimatePending = true;
@@ -201,6 +202,13 @@ function runSchedule(nodes: Map<string, ScheduleNode>, edges: Edge[]): ScheduleR
 
   const projectEnd = Math.max(0, ...[...nodes.values()].map(n => n.EF));
 
+  // Identify connected nodes (have at least one dep edge)
+  const connectedKeys = new Set<string>();
+  for (const e of edges) {
+    if (nodes.has(e.from)) connectedKeys.add(e.from);
+    if (nodes.has(e.to))   connectedKeys.add(e.to);
+  }
+
   // Backward pass
   for (const key of [...topo].reverse()) {
     const node = nodes.get(key)!;
@@ -216,7 +224,8 @@ function runSchedule(nodes: Map<string, ScheduleNode>, edges: Edge[]): ScheduleR
     }
     node.LS = node.LF - node.te;
     node.slack = Math.round((node.LF - node.EF) * 1000) / 1000;
-    node.isCritical = Math.abs(node.slack) < 0.01;
+    // Only mark CP if the node is part of a dependency chain
+    node.isCritical = connectedKeys.has(key) && Math.abs(node.slack) < 0.01;
   }
 
   // Identify critical chain

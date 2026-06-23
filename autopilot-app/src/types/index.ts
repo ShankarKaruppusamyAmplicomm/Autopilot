@@ -130,6 +130,15 @@ export interface ScheduleNode {
   pertP?: number;
 }
 
+export interface BackupVersion {
+  id: number;
+  version: string;       // e.g. "V1", "V2"
+  label: string;         // user-supplied description
+  updatedBy: string;     // who made the change
+  createdAt: string;     // ISO timestamp
+  payload: string;       // full JSON snapshot (workspaces+projects+deps+...)
+}
+
 export interface ScheduleResult {
   nodes: Map<string, ScheduleNode>;
   projectEnd: number;

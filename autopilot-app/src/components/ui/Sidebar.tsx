@@ -4,17 +4,22 @@ import { useStore } from '../../store/useStore';
 import styles from './Sidebar.module.css';
 
 const NAV = [
-  { to: '/',           label: 'Dashboard',    icon: '▦' },
-  { to: '/gantt',      label: 'Gantt',        icon: '▬' },
-  { to: '/pert',       label: 'PERT Network', icon: '◉' },
-  { to: '/deps',       label: 'Dependencies', icon: '⟶' },
-  { to: '/settings',   label: 'Settings',     icon: '⚙' },
+  { to: '/',         label: 'Dashboard',    icon: '▦' },
+  { to: '/gantt',    label: 'Gantt',        icon: '▬' },
+  { to: '/pert',     label: 'PERT Network', icon: '◉' },
+  { to: '/deps',     label: 'Dependencies', icon: '⟶' },
+  { to: '/settings', label: 'Settings',     icon: '⚙' },
 ];
 
-export function Sidebar() {
-  const workspace = useStore(s => s.workspace);
+interface Props {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ collapsed, onToggle }: Props) {
+  const workspace      = useStore(s => s.workspace);
   const renameWorkspace = useStore(s => s.renameWorkspace);
-  const projects = useStore(s => s.projects);
+  const projects        = useStore(s => s.projects);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
 
   function handleRename() {
@@ -23,29 +28,46 @@ export function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
+      {/* Logo — hidden when collapsed, icon shown instead */}
       <div className={styles.logo}>
-        <div className={styles.logoMark}>Auto<span>pilot</span></div>
-        <div className={styles.logoSub}>Portfolio Planning</div>
+        {!collapsed && (
+          <>
+            <div className={styles.logoMark}>Auto<span>pilot</span></div>
+            <div className={styles.logoSub}>Portfolio Planning</div>
+          </>
+        )}
+        {collapsed && <div className={styles.logoIcon}>AP</div>}
       </div>
 
+      {/* Collapse / expand toggle button */}
+      <button
+        className={styles.toggleBtn}
+        onClick={onToggle}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? '›' : '‹'}
+      </button>
+
       <nav className={styles.nav}>
-        <div className={styles.sectionLabel}>Portfolio</div>
+        {!collapsed && <div className={styles.sectionLabel}>Portfolio</div>}
         {NAV.map(item => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === '/'}
             className={({ isActive }) =>
-              `${styles.navItem} ${isActive ? styles.active : ''}`
+              `${styles.navItem} ${isActive ? styles.active : ''} ${collapsed ? styles.navItemCollapsed : ''}`
             }
+            title={collapsed ? item.label : undefined}
           >
             <span className={styles.icon}>{item.icon}</span>
-            {item.label}
+            {!collapsed && item.label}
           </NavLink>
         ))}
 
-        {projects.length > 0 && (
+        {!collapsed && projects.length > 0 && (
           <>
             <button
               className={styles.projectsToggle}
@@ -76,13 +98,15 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className={styles.workspace}>
-        <div className={styles.wsLabel}>Workspace</div>
-        <div className={styles.wsRow}>
-          <span className={styles.wsName}>{workspace?.name ?? '…'}</span>
-          <button className={styles.wsBtn} onClick={handleRename}>rename</button>
+      {!collapsed && (
+        <div className={styles.workspace}>
+          <div className={styles.wsLabel}>Workspace</div>
+          <div className={styles.wsRow}>
+            <span className={styles.wsName}>{workspace?.name ?? '…'}</span>
+            <button className={styles.wsBtn} onClick={handleRename}>rename</button>
+          </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

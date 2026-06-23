@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import type { ItemLevel, Phase, Task } from '../../types';
+import { DepTypeInfo } from '../ui/DepTypeInfo';
 import styles from './ProjectActivitiesView.module.css';
 
 const DEP_LABELS: Record<string, string> = {
@@ -50,7 +51,7 @@ function PhaseForm({ projectId, onDone }: { projectId: number; onDone: () => voi
         </div>
         <div className="form-group">
           <label className="form-label">Owner</label>
-          <input className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Saurav" />
+          <input className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Shankar" />
         </div>
       </div>
       <div className={styles.formRow3}>
@@ -122,7 +123,7 @@ function TaskForm({ projectId, phases, onDone }: { projectId: number; phases: Ph
         </div>
         <div className="form-group">
           <label className="form-label">Owner</label>
-          <input className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Saurav" />
+          <input className="form-input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Shankar" />
         </div>
       </div>
       <div className="form-group">
@@ -315,7 +316,7 @@ export function ProjectActivitiesView({ projectId }: Props) {
                   </select>
                 </div>
                 <div style={{ width: 80, flexShrink: 0 }}>
-                  <label className="form-label">Type</label>
+                  <label className="form-label">Type <DepTypeInfo /></label>
                   <select className="form-input" value={depType} onChange={e => setDepType(e.target.value as typeof depType)}>
                     <option value="FS">FS</option>
                     <option value="SS">SS</option>

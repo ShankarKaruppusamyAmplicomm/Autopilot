@@ -1,20 +1,38 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import {
+  listBackupVersions, createBackupVersion,
+  downloadBackupVersion, deleteBackupVersion,
+} from '../../db';
+import type { BackupVersion } from '../../types';
 import styles from './SettingsView.module.css';
 
 export function SettingsView() {
-  const workspace     = useStore(s => s.workspace);
+  const workspace      = useStore(s => s.workspace);
   const renameWorkspace = useStore(s => s.renameWorkspace);
-  const exportJSON    = useStore(s => s.exportJSON);
-  const importJSON    = useStore(s => s.importJSON);
-  const clearAll      = useStore(s => s.clearAll);
-  const projects      = useStore(s => s.projects);
-  const dependencies  = useStore(s => s.dependencies);
+  const exportJSON     = useStore(s => s.exportJSON);
+  const importJSON     = useStore(s => s.importJSON);
+  const clearAll       = useStore(s => s.clearAll);
+  const projects       = useStore(s => s.projects);
+  const dependencies   = useStore(s => s.dependencies);
 
-  const [wsName, setWsName] = useState(workspace?.name ?? '');
+  const [wsName, setWsName]         = useState(workspace?.name ?? '');
   const [importError, setImportError] = useState('');
-  const [imported, setImported] = useState(false);
+  const [imported, setImported]     = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Versioned backup state
+  const [backups, setBackups]         = useState<BackupVersion[]>([]);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName]       = useState('');
+  const [saveLabel, setSaveLabel]     = useState('');
+  const [saving, setSaving]           = useState(false);
+
+  useEffect(() => { loadBackups(); }, []);
+
+  async function loadBackups() {
+    setBackups(await listBackupVersions());
+  }
 
   async function handleRename() {
     if (!wsName.trim()) return;
@@ -31,25 +49,40 @@ export function SettingsView() {
       await importJSON(text);
       setImported(true);
     } catch {
-      setImportError('Invalid backup file. Make sure you selected an Autopilot JSON backup.');
+      setImportError('Invalid backup file.');
     }
     e.target.value = '';
   }
 
   async function handleClear() {
-    if (!confirm(`This will permanently delete all ${projects.length} projects, ${dependencies.length} dependencies, and all versions/phases/tasks. This cannot be undone.\n\nContinue?`)) return;
+    if (!confirm(`Delete all ${projects.length} projects and ${dependencies.length} dependencies? This cannot be undone.`)) return;
     await clearAll();
   }
 
-  // Storage estimate
-  const dataStr = JSON.stringify({ projects, dependencies });
-  const approxKB = Math.round(new Blob([dataStr]).size / 1024);
+  async function handleSaveVersion() {
+    if (!saveName.trim()) return;
+    setSaving(true);
+    await createBackupVersion(saveName.trim(), saveLabel.trim() || 'Manual snapshot');
+    setSaving(false);
+    setShowSaveModal(false);
+    setSaveName('');
+    setSaveLabel('');
+    await loadBackups();
+  }
+
+  async function handleDelete(bv: BackupVersion) {
+    if (!confirm(`Delete backup ${bv.version}?`)) return;
+    await deleteBackupVersion(bv.id);
+    await loadBackups();
+  }
+
+  const approxKB = Math.round(new Blob([JSON.stringify({ projects, dependencies })]).size / 1024);
 
   return (
     <div className={styles.root}>
       <div className={styles.header}>
         <div className={styles.title}>Settings</div>
-        <div className={styles.subtitle}>Workspace configuration, backup & restore, data management</div>
+        <div className={styles.subtitle}>Workspace configuration, backup history, and data management</div>
       </div>
 
       <div className={styles.body}>
@@ -60,7 +93,8 @@ export function SettingsView() {
           <div className={styles.row}>
             <div className={styles.fieldWrap}>
               <label className="form-label" htmlFor="ws-name">Workspace Name</label>
-              <input id="ws-name" className="form-input" style={{ maxWidth: '320px' }} value={wsName} onChange={e => setWsName(e.target.value)} onBlur={handleRename} />
+              <input id="ws-name" className="form-input" style={{ maxWidth: '320px' }}
+                value={wsName} onChange={e => setWsName(e.target.value)} onBlur={handleRename} />
             </div>
           </div>
           <div className={styles.meta}>
@@ -71,22 +105,80 @@ export function SettingsView() {
           </div>
         </section>
 
-        {/* Backup & Restore */}
+        {/* Versioned Backup History */}
         <section className={styles.section}>
-          <div className={styles.sectionTitle}>Backup & Restore</div>
+          <div className={styles.sectionTitleRow}>
+            <div className={styles.sectionTitle}>Backup History</div>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowSaveModal(true)}>
+              + Save Version
+            </button>
+          </div>
+          <div className={styles.cardDesc} style={{ marginBottom: 12 }}>
+            Each saved version captures a full snapshot of the portfolio. Versions are stored locally in your browser and can be downloaded as JSON files.
+          </div>
+
+          {backups.length === 0 ? (
+            <div className={styles.emptyBackups}>
+              No saved versions yet. Click <strong>+ Save Version</strong> to create the first snapshot.
+            </div>
+          ) : (
+            <table className={styles.backupTable}>
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Label</th>
+                  <th>Updated By</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {backups.map(bv => {
+                  const d = new Date(bv.createdAt);
+                  return (
+                    <tr key={bv.id} className={styles.backupRow}>
+                      <td><span className={styles.versionTag}>{bv.version}</span></td>
+                      <td className={styles.backupLabel}>{bv.label}</td>
+                      <td className={styles.backupUser}>{bv.updatedBy}</td>
+                      <td className={styles.backupDate}>{d.toLocaleDateString()}</td>
+                      <td className={styles.backupDate}>{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className={styles.backupActions}>
+                        <button
+                          className={styles.actionBtn}
+                          onClick={() => downloadBackupVersion(bv)}
+                          title="Download this version as JSON"
+                        >↓ Download</button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(bv)}
+                          title="Delete this version"
+                        >×</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        {/* Raw Export / Import */}
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>Export & Restore</div>
           <div className={styles.cardGrid}>
             <div className={styles.card}>
-              <div className={styles.cardLabel}>Export JSON backup</div>
-              <div className={styles.cardDesc}>Downloads a human-readable JSON file with all your projects, versions, phases, tasks, and dependencies. Use this to move between browsers or devices.</div>
-              <button className="btn btn-primary" onClick={() => exportJSON()}>Download backup</button>
+              <div className={styles.cardLabel}>Export current state</div>
+              <div className={styles.cardDesc}>Downloads the latest snapshot as a JSON file. Use this to move to another browser or device.</div>
+              <button className="btn btn-primary" onClick={() => exportJSON()}>Download JSON</button>
             </div>
             <div className={styles.card}>
-              <div className={styles.cardLabel}>Import JSON backup</div>
-              <div className={styles.cardDesc}>Restores from a previously exported backup file. This replaces all current data — export first if you want to keep it.</div>
+              <div className={styles.cardLabel}>Restore from file</div>
+              <div className={styles.cardDesc}>Replaces all data from a previously exported JSON file. Export first if you want to keep current data.</div>
               <button className="btn btn-ghost" onClick={() => fileRef.current?.click()}>Choose file…</button>
               <input ref={fileRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
               {importError && <div className={styles.errorMsg}>{importError}</div>}
-              {imported && <div className={styles.successMsg}>Import complete. Workspace restored.</div>}
+              {imported && <div className={styles.successMsg}>Restore complete.</div>}
             </div>
           </div>
         </section>
@@ -97,7 +189,7 @@ export function SettingsView() {
           <div className={styles.dangerRow}>
             <div>
               <div className={styles.dangerLabel}>Clear all data</div>
-              <div className={styles.dangerDesc}>Permanently deletes all projects, dependencies, versions, phases, and tasks. The workspace name is reset. This cannot be undone.</div>
+              <div className={styles.dangerDesc}>Permanently deletes all projects, dependencies, versions, phases, and tasks. Cannot be undone.</div>
             </div>
             <button className="btn btn-danger" onClick={handleClear}>Clear all data</button>
           </div>
@@ -113,7 +205,51 @@ export function SettingsView() {
             <div className={styles.aboutItem}><span className={styles.aboutKey}>Offline</span><span>Works without internet after first load</span></div>
           </div>
         </section>
+
       </div>
+
+      {/* Save Version Modal */}
+      {showSaveModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowSaveModal(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Save Version</div>
+            <div className={styles.modalSubtitle}>
+              A full snapshot of all {projects.length} projects and {dependencies.length} dependencies will be saved.
+            </div>
+
+            <div className={styles.modalField}>
+              <label className="form-label">Your name *</label>
+              <input
+                className="form-input"
+                placeholder="e.g. Shankar"
+                value={saveName}
+                onChange={e => setSaveName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className={styles.modalField}>
+              <label className="form-label">What changed? (optional)</label>
+              <input
+                className="form-input"
+                placeholder="e.g. Updated VAPT dates and added SOV dependency"
+                value={saveLabel}
+                onChange={e => setSaveLabel(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className="btn btn-ghost" onClick={() => setShowSaveModal(false)}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveVersion}
+                disabled={!saveName.trim() || saving}
+              >
+                {saving ? 'Saving…' : 'Save Version'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

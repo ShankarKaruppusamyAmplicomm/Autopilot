@@ -6,11 +6,28 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 200ms ease;
+  position: relative;
 }
 
+.sidebar.collapsed {
+  width: 48px;
+}
+
+/* ── Logo ── */
 .logo {
   padding: 20px 16px 16px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.collapsed .logo {
+  padding: 16px 0;
+  align-items: center;
 }
 
 .logoMark {
@@ -19,8 +36,8 @@
   font-size: 15px;
   letter-spacing: -0.5px;
   color: var(--text);
+  white-space: nowrap;
 }
-
 .logoMark span { color: var(--accent); }
 
 .logoSub {
@@ -30,12 +47,50 @@
   margin-top: 2px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
+.logoIcon {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+}
+
+/* ── Toggle button ── */
+.toggleBtn {
+  position: absolute;
+  top: 20px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  flex-shrink: 0;
+}
+.toggleBtn:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Nav ── */
 .nav {
   flex: 1;
   padding: 8px 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sectionLabel {
@@ -46,6 +101,7 @@
   color: var(--text-dim);
   padding: 12px 16px 4px;
   font-family: var(--sans);
+  white-space: nowrap;
 }
 
 .navItem {
@@ -60,17 +116,20 @@
   text-decoration: none;
   font-family: var(--mono);
   border-left: 2px solid transparent;
+  white-space: nowrap;
 }
-
-.navItem:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
+.navItem:hover { background: var(--surface-2); color: var(--text); }
 .navItem.active {
   background: var(--accent-dim);
   color: var(--text);
   border-left-color: var(--accent);
+}
+
+/* Collapsed nav items — centered icon only */
+.navItemCollapsed {
+  padding: 7px 0;
+  justify-content: center;
+  border-left: 2px solid transparent;
 }
 
 .icon {
@@ -80,52 +139,9 @@
   flex-shrink: 0;
   opacity: 0.7;
 }
-
 .navItem.active .icon { opacity: 1; }
 
-.workspace {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.wsLabel {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-family: var(--sans);
-  margin-bottom: 5px;
-}
-
-.wsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.wsName {
-  font-size: 12px;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wsBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: var(--sans);
-  font-size: 10px;
-  color: var(--accent);
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.wsBtn:hover { text-decoration: underline; }
-
-/* Project list in sidebar */
+/* ── Projects list ── */
 .projectsToggle {
   display: flex;
   align-items: center;
@@ -164,7 +180,11 @@
   overflow: hidden;
 }
 .projectItem:hover { background: var(--surface-2); color: var(--text); }
-.projectItem.active { background: var(--accent-dim); color: var(--text); border-left-color: var(--accent); }
+.projectItem.active {
+  background: var(--accent-dim);
+  color: var(--text);
+  border-left-color: var(--accent);
+}
 
 .projectDot {
   width: 7px;
@@ -187,3 +207,47 @@
   background: var(--critical);
   flex-shrink: 0;
 }
+
+/* ── Workspace footer ── */
+.workspace {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.wsLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+.wsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wsName {
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wsBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 10px;
+  color: var(--accent);
+  padding: 0;
+  flex-shrink: 0;
+}
+.wsBtn:hover { text-decoration: underline; }

@@ -21,6 +21,7 @@ export default function App() {
   const init    = useStore(s => s.init);
   const loading = useStore(s => s.loading);
   const [modalProjectId, setModalProjectId] = useState<number | null | undefined>(undefined);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => { init(); }, []);
 
@@ -38,7 +39,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className={styles.shell}>
-        <Sidebar />
+        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
         <div className={styles.main}>
           <Topbar onNewProject={() => setModalProjectId(null)} />
           <div className={styles.content}>

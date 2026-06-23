@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import type { ItemLevel } from '../../types';
+import { DepTypeInfo } from '../ui/DepTypeInfo';
 import styles from './DepsView.module.css';
 
 const DEP_LABELS: Record<string, string> = { FS: 'Finish → Start', SS: 'Start → Start', FF: 'Finish → Finish', SF: 'Start → Finish' };
@@ -79,7 +80,9 @@ export function DepsView() {
             </div>
 
             <div className={styles.formGroupSm}>
-              <label className="form-label">Type</label>
+              <label className="form-label">
+                Type <DepTypeInfo />
+              </label>
               <select className="form-input" value={depType} onChange={e => setDepType(e.target.value as typeof depType)}>
                 <option value="FS">FS</option>
                 <option value="SS">SS</option>

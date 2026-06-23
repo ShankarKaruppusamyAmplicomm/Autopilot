@@ -7,7 +7,7 @@
 | Author | Shankar (PMO, Truflo AI) |
 | Date | 19 June 2026 |
 | Status | For review |
-| Reviewers | Puneet (Product), Saurav (Dev/Data Infra), Achin (DevOps/Security) |
+| Reviewers | Puneet (Product), Shankar (Dev/Data Infra), Achin (DevOps/Security) |
 
 ---
 

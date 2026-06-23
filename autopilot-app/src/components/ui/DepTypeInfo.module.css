@@ -1,0 +1,117 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--text-dim);
+  color: var(--text-dim);
+  font-size: 8px;
+  font-weight: 700;
+  font-style: normal;
+  font-family: var(--sans);
+  cursor: default;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.wrap:hover .icon {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Tooltip — fixed to viewport so it is never clipped by overflow:hidden ancestors */
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 300px;
+  pointer-events: none;
+}
+
+/* Arrow pointing up toward the icon */
+.tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  border: 5px solid transparent;
+  border-bottom-color: var(--border);
+}
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% - 1px);
+  left: 12px;
+  border: 5px solid transparent;
+  border-bottom-color: var(--surface-2);
+}
+
+.heading {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.code {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 2px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  min-width: 26px;
+  text-align: center;
+  margin-top: 1px;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  line-height: 1.5;
+}
