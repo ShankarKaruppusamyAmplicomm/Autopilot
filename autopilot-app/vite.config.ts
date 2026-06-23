@@ -2,9 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Use /Autopilot/ base only for production (GitHub Pages).
+// Local dev runs at / so hot-reload and asset paths work normally.
+const base = process.env.NODE_ENV === 'production' ? '/Autopilot/' : '/';
+
 export default defineConfig({
-  // GitHub Pages serves from /Autopilot/ — set base so assets resolve correctly
-  base: '/Autopilot/',
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -18,8 +21,8 @@ export default defineConfig({
         theme_color: '#0D1117',
         background_color: '#0D1117',
         display: 'standalone',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
