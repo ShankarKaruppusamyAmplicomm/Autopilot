@@ -1,0 +1,105 @@
+.bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  max-width: 640px;
+  width: calc(100vw - 48px);
+  animation: slideUp 200ms ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.icon { font-size: 18px; flex-shrink: 0; }
+
+.msg {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  line-height: 1.5;
+}
+
+.msg strong { color: var(--text); }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.inlineForm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nameInput {
+  background: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--sans);
+  padding: 5px 10px;
+  width: 180px;
+  outline: none;
+}
+.nameInput:focus { border-color: var(--accent); }
+
+.saveBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--sans);
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 120ms ease;
+}
+.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.saveBtn:hover:not(:disabled) { opacity: 0.85; }
+
+.snoozeBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--sans);
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.snoozeBtn:hover { color: var(--text); border-color: var(--text-dim); }
+
+.savedMsg {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success-text, #3fb950);
+  font-family: var(--sans);
+}

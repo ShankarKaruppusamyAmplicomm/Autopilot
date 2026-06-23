@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Workspace, Project, Version, Phase, Task, Dependency, BackupVersion } from '../types';
+import type { Workspace, Project, Version, Phase, Task, Dependency, BackupVersion, VisitorRecord } from '../types';
 
 export class AutopilotDB extends Dexie {
   workspaces!:     Table<Workspace>;
@@ -9,6 +9,7 @@ export class AutopilotDB extends Dexie {
   tasks!:          Table<Task>;
   dependencies!:   Table<Dependency>;
   backupVersions!: Table<BackupVersion>;
+  visitors!:       Table<VisitorRecord>;
 
   constructor() {
     super('AutopilotDB');
@@ -29,6 +30,17 @@ export class AutopilotDB extends Dexie {
       tasks:          '++id, phaseId',
       dependencies:   '++id, predecessorId, successorId',
       backupVersions: '++id, version, createdAt',
+    });
+    // v3 adds visitor tracking (local-only, no external service)
+    this.version(3).stores({
+      workspaces:     '++id, name',
+      projects:       '++id, workspaceId, name, order',
+      versions:       '++id, projectId, order',
+      phases:         '++id, projectId, versionId, order',
+      tasks:          '++id, phaseId',
+      dependencies:   '++id, predecessorId, successorId',
+      backupVersions: '++id, version, createdAt',
+      visitors:       '++id, deviceId, firstSeen',
     });
   }
 }
@@ -97,6 +109,69 @@ export async function downloadBackupVersion(bv: BackupVersion): Promise<void> {
 
 export async function deleteBackupVersion(id: number): Promise<void> {
   await db.backupVersions.delete(id);
+}
+
+// Restore projects/deps/versions/phases/tasks from the latest backup.
+// Called on boot when projects table is empty but backups exist — survives deploys.
+export async function restoreFromLatestBackup(): Promise<boolean> {
+  const latest = await db.backupVersions.orderBy('createdAt').last();
+  if (!latest) return false;
+  try {
+    const data = JSON.parse(latest.payload);
+    await db.transaction('rw', [db.workspaces, db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
+      await Promise.all([
+        db.workspaces.clear(), db.projects.clear(), db.versions.clear(),
+        db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
+      ]);
+      if (data.workspaces?.length)   await db.workspaces.bulkAdd(data.workspaces);
+      if (data.projects?.length)     await db.projects.bulkAdd(data.projects);
+      if (data.versions?.length)     await db.versions.bulkAdd(data.versions);
+      if (data.phases?.length)       await db.phases.bulkAdd(data.phases);
+      if (data.tasks?.length)        await db.tasks.bulkAdd(data.tasks);
+      if (data.dependencies?.length) await db.dependencies.bulkAdd(data.dependencies);
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Visitor tracking (local-only) ───────────────────────────────────────────
+
+function getOrCreateDeviceId(): string {
+  const KEY = 'autopilot_device_id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+export async function recordVisit(): Promise<void> {
+  const deviceId = getOrCreateDeviceId();
+  const existing = await db.visitors.where('deviceId').equals(deviceId).first();
+  const now = new Date().toISOString();
+  if (!existing) {
+    await db.visitors.add({
+      id: undefined as unknown as number,
+      deviceId,
+      firstSeen: now,
+      lastSeen: now,
+      visitCount: 1,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      locale: navigator.language,
+    } as VisitorRecord);
+  } else {
+    await db.visitors.update(existing.id, {
+      lastSeen: now,
+      visitCount: (existing.visitCount ?? 1) + 1,
+    });
+  }
+}
+
+export async function listVisitors(): Promise<VisitorRecord[]> {
+  return db.visitors.orderBy('firstSeen').reverse().toArray();
 }
 
 // ─── Legacy full export / import ─────────────────────────────────────────────

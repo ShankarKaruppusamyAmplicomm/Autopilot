@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, ensureWorkspace, exportBackup, importBackup } from '../db';
+import { db, ensureWorkspace, exportBackup, importBackup, restoreFromLatestBackup, recordVisit } from '../db';
 import { computePortfolioSchedule, detectCycle } from '../engine/scheduler';
 import type {
   Workspace, Project, Version, Phase, Task, Dependency,
@@ -15,6 +15,7 @@ interface AppState {
   dependencies: Dependency[];
   scheduleResult: ScheduleResult | null;
   loading: boolean;
+  lastEditAt: number | null;   // epoch ms of most recent data mutation
 
   // Init
   init: () => Promise<void>;
@@ -57,7 +58,7 @@ interface AppState {
   clearAll: () => Promise<void>;
 
   // Internal
-  _reload: () => Promise<void>;
+  _reload: (markEdit?: boolean) => Promise<void>;
   _recompute: () => void;
 }
 
@@ -73,6 +74,7 @@ export const useStore = create<AppState>((set, get) => ({
   dependencies: [],
   scheduleResult: null,
   loading: true,
+  lastEditAt: null,
 
   async init() {
     if (_initStarted) return;
@@ -92,19 +94,33 @@ export const useStore = create<AppState>((set, get) => ({
 
     const needsReseed = (ws.schemaVersion ?? 0) < SEED_VERSION;
     if (needsReseed) {
-      // Wipe everything and re-seed cleanly
-      await db.transaction('rw', [db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
-        await Promise.all([
-          db.projects.clear(), db.versions.clear(),
-          db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
-        ]);
-      });
-      await seedTrufloData(ws.id as number);
+      // Try to restore from latest backup first — preserves user data across deploys.
+      // Only fall back to seed data if no backup exists.
+      const restored = await restoreFromLatestBackup();
+      if (!restored) {
+        await db.transaction('rw', [db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
+          await Promise.all([
+            db.projects.clear(), db.versions.clear(),
+            db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
+          ]);
+        });
+        await seedTrufloData(ws.id as number);
+      }
       await db.workspaces.update(ws.id, { schemaVersion: SEED_VERSION });
       ws = { ...ws, schemaVersion: SEED_VERSION };
+    } else {
+      // Even without reseed, if projects table is empty but backups exist, restore.
+      // This handles the case where a new deploy cleared IndexedDB unexpectedly.
+      const projectCount = await db.projects.count();
+      if (projectCount === 0) {
+        await restoreFromLatestBackup();
+      }
     }
 
-    await get()._reload();
+    // Record this device's visit (local-only, no external service)
+    recordVisit().catch(() => {});
+
+    await get()._reload(); // init: don't mark as user edit
     set({ workspace: ws, loading: false });
     get()._recompute();
   },
@@ -120,14 +136,14 @@ export const useStore = create<AppState>((set, get) => ({
     const ws = get().workspace!;
     const order = get().projects.length;
     const id = await db.projects.add({ ...p, id: undefined as unknown as number, workspaceId: ws.id, order } as Project);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
     return id;
   },
 
   async updateProject(id, patch) {
     await db.projects.update(id, patch);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
@@ -141,7 +157,7 @@ export const useStore = create<AppState>((set, get) => ({
       await db.dependencies.where('predecessorId').equals(id).or('successorId').equals(id).delete();
       await db.projects.delete(id);
     });
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
@@ -151,20 +167,20 @@ export const useStore = create<AppState>((set, get) => ({
         await db.projects.update(ids[i], { order: i });
       }
     });
-    await get()._reload();
+    await get()._reload(true);
   },
 
   async addVersion(v) {
     const order = (await db.versions.where('projectId').equals(v.projectId).count());
     const id = await db.versions.add({ ...v, id: undefined as unknown as number, order } as Version);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
     return id;
   },
 
   async updateVersion(id, patch) {
     await db.versions.update(id, patch);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
@@ -174,21 +190,21 @@ export const useStore = create<AppState>((set, get) => ({
     await db.tasks.where('phaseId').anyOf(phaseIds).delete();
     await db.phases.where('versionId').equals(id).delete();
     await db.versions.delete(id);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
   async addPhase(p) {
     const order = (await db.phases.where('projectId').equals(p.projectId).count());
     const id = await db.phases.add({ ...p, id: undefined as unknown as number, order } as Phase);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
     return id;
   },
 
   async updatePhase(id, patch) {
     await db.phases.update(id, patch);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
@@ -196,26 +212,26 @@ export const useStore = create<AppState>((set, get) => ({
     await db.tasks.where('phaseId').equals(id).delete();
     await db.dependencies.where('predecessorId').equals(id).or('successorId').equals(id).delete();
     await db.phases.delete(id);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
   async addTask(t) {
     const id = await db.tasks.add({ ...t, id: undefined as unknown as number } as Task);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
     return id;
   },
 
   async updateTask(id, patch) {
     await db.tasks.update(id, patch);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
   async deleteTask(id) {
     await db.tasks.delete(id);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
@@ -243,14 +259,14 @@ export const useStore = create<AppState>((set, get) => ({
       id: undefined as unknown as number,
       predecessorId, successorId, predecessorLevel, successorLevel, type, lagDays,
     } as Dependency);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
     return { ok: true };
   },
 
   async removeDependency(id) {
     await db.dependencies.delete(id);
-    await get()._reload();
+    await get()._reload(true);
     get()._recompute();
   },
 
@@ -267,7 +283,7 @@ export const useStore = create<AppState>((set, get) => ({
   async importJSON(json) {
     await importBackup(json);
     const ws = await ensureWorkspace();
-    await get()._reload();
+    await get()._reload(true);
     set({ workspace: ws });
     get()._recompute();
   },
@@ -283,7 +299,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ workspace: ws, projects: [], versions: [], phases: [], tasks: [], dependencies: [], scheduleResult: null });
   },
 
-  async _reload() {
+  async _reload(markEdit = false) {
     const [projects, versions, phases, tasks, dependencies] = await Promise.all([
       db.projects.orderBy('order').toArray(),
       db.versions.orderBy('order').toArray(),
@@ -291,7 +307,7 @@ export const useStore = create<AppState>((set, get) => ({
       db.tasks.toArray(),
       db.dependencies.toArray(),
     ]);
-    set({ projects, versions, phases, tasks, dependencies });
+    set({ projects, versions, phases, tasks, dependencies, ...(markEdit ? { lastEditAt: Date.now() } : {}) });
   },
 
   _recompute() {

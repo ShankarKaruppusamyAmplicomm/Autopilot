@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { Sidebar } from './components/ui/Sidebar';
 import { Topbar } from './components/ui/Topbar';
+import { SaveReminder } from './components/ui/SaveReminder';
 import { Dashboard } from './components/views/Dashboard';
 import { GanttView } from './components/views/GanttView';
 import { PertView } from './components/views/PertView';
@@ -63,6 +64,8 @@ export default function App() {
           onClose={() => setModalProjectId(undefined)}
         />
       )}
+
+      <SaveReminder />
     </BrowserRouter>
   );
 }

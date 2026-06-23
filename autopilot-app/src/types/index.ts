@@ -139,6 +139,16 @@ export interface BackupVersion {
   payload: string;       // full JSON snapshot (workspaces+projects+deps+...)
 }
 
+export interface VisitorRecord {
+  id: number;
+  deviceId: string;      // random UUID stored in localStorage
+  firstSeen: string;     // ISO timestamp of first visit
+  lastSeen: string;      // ISO timestamp of most recent visit
+  visitCount: number;
+  timezone: string;      // e.g. "Asia/Kolkata"
+  locale: string;        // e.g. "en-IN"
+}
+
 export interface ScheduleResult {
   nodes: Map<string, ScheduleNode>;
   projectEnd: number;

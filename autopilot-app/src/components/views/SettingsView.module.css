@@ -222,6 +222,44 @@
 }
 .deleteBtn:hover { color: var(--critical); background: var(--critical-dim); }
 
+/* ── Visitor analytics ── */
+.visitorSummary {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.visitorStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  min-width: 100px;
+  align-items: center;
+}
+
+.visitorNum {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--mono);
+  line-height: 1;
+}
+
+.visitorLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  margin-top: 4px;
+}
+
 /* ── Save version modal ── */
 .modalOverlay {
   position: fixed;

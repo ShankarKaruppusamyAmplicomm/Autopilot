@@ -1,10 +1,10 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import {
   listBackupVersions, createBackupVersion,
-  downloadBackupVersion, deleteBackupVersion,
+  downloadBackupVersion, deleteBackupVersion, listVisitors,
 } from '../../db';
-import type { BackupVersion } from '../../types';
+import type { BackupVersion, VisitorRecord } from '../../types';
 import styles from './SettingsView.module.css';
 
 export function SettingsView() {
@@ -28,6 +28,9 @@ export function SettingsView() {
   const [saveLabel, setSaveLabel]       = useState('');
   const [saving, setSaving]             = useState(false);
 
+  // Visitor analytics
+  const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
+
   // Clear-all password modal
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearPassword, setClearPassword]   = useState('');
@@ -37,7 +40,10 @@ export function SettingsView() {
   // SHA-256 of "AutopilotAdminDelete" — never store the plain text
   const ADMIN_HASH = '7be9377951db0256557aa6c4dd8a868e800b12eab51d0af476a50a45a691828e';
 
-  useEffect(() => { loadBackups(); }, []);
+  useEffect(() => {
+    loadBackups();
+    listVisitors().then(setVisitors);
+  }, []);
 
   async function loadBackups() {
     setBackups(await listBackupVersions());
@@ -224,6 +230,59 @@ export function SettingsView() {
             </div>
             <button className="btn btn-danger" onClick={handleClear}>Clear all data…</button>
           </div>
+        </section>
+
+        {/* Visitor Analytics */}
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>Visitor Analytics</div>
+          <div className={styles.cardDesc} style={{ marginBottom: 14 }}>
+            Tracked locally in your browser — no external service, no data ever leaves this device.
+            Each unique browser or device that has opened this app is counted as one visitor.
+          </div>
+
+          <div className={styles.visitorSummary}>
+            <div className={styles.visitorStat}>
+              <span className={styles.visitorNum}>{visitors.length}</span>
+              <span className={styles.visitorLabel}>Unique visitors</span>
+            </div>
+            <div className={styles.visitorStat}>
+              <span className={styles.visitorNum}>{visitors.reduce((s, v) => s + (v.visitCount ?? 1), 0)}</span>
+              <span className={styles.visitorLabel}>Total visits</span>
+            </div>
+            <div className={styles.visitorStat}>
+              <span className={styles.visitorNum}>{new Set(visitors.map(v => v.timezone)).size}</span>
+              <span className={styles.visitorLabel}>Timezones</span>
+            </div>
+          </div>
+
+          {visitors.length === 0 ? (
+            <div className={styles.emptyBackups}>No visitor records yet. They appear after the first page load.</div>
+          ) : (
+            <table className={styles.backupTable} style={{ marginTop: 14 }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>First seen</th>
+                  <th>Last seen</th>
+                  <th>Visits</th>
+                  <th>Timezone</th>
+                  <th>Locale</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visitors.map((v, i) => (
+                  <tr key={v.id} className={styles.backupRow}>
+                    <td className={styles.backupDate}>{i + 1}</td>
+                    <td className={styles.backupDate}>{new Date(v.firstSeen).toLocaleDateString()}</td>
+                    <td className={styles.backupDate}>{new Date(v.lastSeen).toLocaleDateString()}</td>
+                    <td><span className={styles.versionTag}>{v.visitCount}</span></td>
+                    <td className={styles.backupLabel}>{v.timezone}</td>
+                    <td className={styles.backupUser}>{v.locale}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
 
         {/* About */}
