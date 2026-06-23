@@ -14,6 +14,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Restore path from GitHub Pages 404 redirect -->
+    <script>
+      (function () {
+        var p = new URLSearchParams(window.location.search).get('p');
+        if (p) {
+          var url = window.location.pathname + p;
+          window.history.replaceState(null, '', url);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
