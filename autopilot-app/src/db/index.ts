@@ -111,29 +111,64 @@ export async function deleteBackupVersion(id: number): Promise<void> {
   await db.backupVersions.delete(id);
 }
 
-// Restore projects/deps/versions/phases/tasks from the latest backup.
+// Shared restore helper — loads a parsed backup payload into all tables.
+async function restorePayload(data: Record<string, unknown[]>): Promise<void> {
+  await db.transaction('rw', [db.workspaces, db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
+    await Promise.all([
+      db.workspaces.clear(), db.projects.clear(), db.versions.clear(),
+      db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
+    ]);
+    if (data.workspaces?.length)   await db.workspaces.bulkAdd(data.workspaces as Workspace[]);
+    if (data.projects?.length)     await db.projects.bulkAdd(data.projects as Project[]);
+    if (data.versions?.length)     await db.versions.bulkAdd(data.versions as Version[]);
+    if (data.phases?.length)       await db.phases.bulkAdd(data.phases as Phase[]);
+    if (data.tasks?.length)        await db.tasks.bulkAdd(data.tasks as Task[]);
+    if (data.dependencies?.length) await db.dependencies.bulkAdd(data.dependencies as Dependency[]);
+  });
+}
+
+// Restore projects/deps/versions/phases/tasks from the latest IndexedDB backup.
 // Called on boot when projects table is empty but backups exist — survives deploys.
 export async function restoreFromLatestBackup(): Promise<boolean> {
   const latest = await db.backupVersions.orderBy('createdAt').last();
   if (!latest) return false;
   try {
     const data = JSON.parse(latest.payload);
-    await db.transaction('rw', [db.workspaces, db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
-      await Promise.all([
-        db.workspaces.clear(), db.projects.clear(), db.versions.clear(),
-        db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
-      ]);
-      if (data.workspaces?.length)   await db.workspaces.bulkAdd(data.workspaces);
-      if (data.projects?.length)     await db.projects.bulkAdd(data.projects);
-      if (data.versions?.length)     await db.versions.bulkAdd(data.versions);
-      if (data.phases?.length)       await db.phases.bulkAdd(data.phases);
-      if (data.tasks?.length)        await db.tasks.bulkAdd(data.tasks);
-      if (data.dependencies?.length) await db.dependencies.bulkAdd(data.dependencies);
-    });
+    await restorePayload(data);
     return true;
   } catch {
     return false;
   }
+}
+
+// Restore from the static seed.json file committed to public/data/.
+// This is the cross-browser fallback — works in incognito, new devices,
+// any browser where IndexedDB is empty. Returns true if the file exists
+// and was loaded successfully.
+export async function restoreFromStaticSeed(base: string): Promise<boolean> {
+  try {
+    const url = `${base}data/seed.json`.replace(/\/+/g, '/').replace(':/', '://');
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (!data.projects?.length) return false;
+    await restorePayload(data);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Publish the current state as the static seed file.
+// Downloads seed.json — the user commits it to public/data/ and pushes.
+export async function publishSeedFile(): Promise<void> {
+  const json = await snapshot();
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'seed.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ─── Visitor tracking (local-only) ───────────────────────────────────────────
@@ -182,16 +217,5 @@ export async function exportBackup(): Promise<string> {
 
 export async function importBackup(json: string): Promise<void> {
   const data = JSON.parse(json);
-  await db.transaction('rw', [db.workspaces, db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
-    await Promise.all([
-      db.workspaces.clear(), db.projects.clear(), db.versions.clear(),
-      db.phases.clear(), db.tasks.clear(), db.dependencies.clear(),
-    ]);
-    if (data.workspaces?.length)   await db.workspaces.bulkAdd(data.workspaces);
-    if (data.projects?.length)     await db.projects.bulkAdd(data.projects);
-    if (data.versions?.length)     await db.versions.bulkAdd(data.versions);
-    if (data.phases?.length)       await db.phases.bulkAdd(data.phases);
-    if (data.tasks?.length)        await db.tasks.bulkAdd(data.tasks);
-    if (data.dependencies?.length) await db.dependencies.bulkAdd(data.dependencies);
-  });
+  await restorePayload(data);
 }

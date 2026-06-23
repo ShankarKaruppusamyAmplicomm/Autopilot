@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, ensureWorkspace, exportBackup, importBackup, restoreFromLatestBackup, recordVisit } from '../db';
+import { db, ensureWorkspace, exportBackup, importBackup, restoreFromLatestBackup, restoreFromStaticSeed, recordVisit } from '../db';
 import { computePortfolioSchedule, detectCycle } from '../engine/scheduler';
 import type {
   Workspace, Project, Version, Phase, Task, Dependency,
@@ -93,10 +93,16 @@ export const useStore = create<AppState>((set, get) => ({
     ) as typeof allWs[0];
 
     const needsReseed = (ws.schemaVersion ?? 0) < SEED_VERSION;
-    if (needsReseed) {
-      // Try to restore from latest backup first — preserves user data across deploys.
-      // Only fall back to seed data if no backup exists.
-      const restored = await restoreFromLatestBackup();
+    const projectCount = await db.projects.count();
+
+    if (needsReseed || projectCount === 0) {
+      // Three-level fallback — works in incognito, new devices, fresh deploys:
+      // 1. IndexedDB backup versions (same browser, same profile)
+      // 2. Static seed.json committed to public/data/ (cross-browser, incognito-safe)
+      // 3. Hardcoded seed projects (first ever run, no published seed yet)
+      const base = import.meta.env.BASE_URL;
+      let restored = await restoreFromLatestBackup();
+      if (!restored) restored = await restoreFromStaticSeed(base);
       if (!restored) {
         await db.transaction('rw', [db.projects, db.versions, db.phases, db.tasks, db.dependencies], async () => {
           await Promise.all([
@@ -106,14 +112,9 @@ export const useStore = create<AppState>((set, get) => ({
         });
         await seedTrufloData(ws.id as number);
       }
-      await db.workspaces.update(ws.id, { schemaVersion: SEED_VERSION });
-      ws = { ...ws, schemaVersion: SEED_VERSION };
-    } else {
-      // Even without reseed, if projects table is empty but backups exist, restore.
-      // This handles the case where a new deploy cleared IndexedDB unexpectedly.
-      const projectCount = await db.projects.count();
-      if (projectCount === 0) {
-        await restoreFromLatestBackup();
+      if (needsReseed) {
+        await db.workspaces.update(ws.id, { schemaVersion: SEED_VERSION });
+        ws = { ...ws, schemaVersion: SEED_VERSION };
       }
     }
 

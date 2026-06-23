@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import {
   listBackupVersions, createBackupVersion,
-  downloadBackupVersion, deleteBackupVersion, listVisitors,
+  downloadBackupVersion, deleteBackupVersion, listVisitors, publishSeedFile,
 } from '../../db';
 import type { BackupVersion, VisitorRecord } from '../../types';
 import styles from './SettingsView.module.css';
@@ -198,6 +198,42 @@ export function SettingsView() {
               </tbody>
             </table>
           )}
+        </section>
+
+        {/* Publish as source data */}
+        <section className={styles.section}>
+          <div className={styles.sectionTitleRow}>
+            <div className={styles.sectionTitle}>Source Data for All Visitors</div>
+            <span className={styles.seedBadge}>Cross-browser safe</span>
+          </div>
+          <div className={styles.cardDesc} style={{ marginBottom: 14 }}>
+            Incognito windows and new devices have empty IndexedDB — they cannot see your browser's backup history.
+            Publishing bakes the current portfolio into a <code className={styles.code}>seed.json</code> file
+            that is served from GitHub Pages and loaded by <em>every</em> visitor on first open, regardless of browser or mode.
+          </div>
+          <div className={styles.seedSteps}>
+            <div className={styles.seedStep}>
+              <span className={styles.stepNum}>1</span>
+              <div>
+                <strong>Click "Publish seed.json"</strong> — downloads <code className={styles.code}>seed.json</code> with the current snapshot.
+              </div>
+            </div>
+            <div className={styles.seedStep}>
+              <span className={styles.stepNum}>2</span>
+              <div>
+                Move the downloaded file to <code className={styles.code}>autopilot-app/public/data/seed.json</code> in your project folder.
+              </div>
+            </div>
+            <div className={styles.seedStep}>
+              <span className={styles.stepNum}>3</span>
+              <div>
+                Commit and push — GitHub Actions deploys it automatically. All visitors (including incognito) will load this data.
+              </div>
+            </div>
+          </div>
+          <button className="btn btn-primary" style={{ marginTop: 6 }} onClick={() => publishSeedFile()}>
+            Publish seed.json
+          </button>
         </section>
 
         {/* Raw Export / Import */}
