@@ -1,14 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-:root {
+/* ── Dark theme (default) ─────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
   --ground:       #0D1117;
   --surface:      #161B22;
   --surface-2:    #21262D;
   --border:       #30363D;
   --border-light: #21262D;
   --text:         #E6EDF3;
-  --text-muted:   #FFFFFF;
-  --text-dim:     #FFFFFF;
+  --text-muted:   #8B949E;
+  --text-dim:     #6E7681;
   --accent:       #6E40C9;
   --accent-hover: #7D52D4;
   --accent-dim:   #2D1F5E;
@@ -19,7 +21,35 @@
   --warning:      #9E6A03;
   --warning-text: #E3B341;
   --info:         #1F6FEB;
+  --shadow:       0 4px 16px rgba(0,0,0,0.5);
+  --shadow-sm:    0 1px 4px rgba(0,0,0,0.4);
+}
 
+/* ── Light theme ──────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --ground:       #F6F8FA;
+  --surface:      #FFFFFF;
+  --surface-2:    #EFF1F3;
+  --border:       #D0D7DE;
+  --border-light: #E8EBEF;
+  --text:         #1F2328;
+  --text-muted:   #656D76;
+  --text-dim:     #8C959F;
+  --accent:       #6E40C9;
+  --accent-hover: #5A30B0;
+  --accent-dim:   #EDE9FF;
+  --critical:     #CF222E;
+  --critical-dim: #FFEBE9;
+  --success:      #1A7F37;
+  --success-text: #1A7F37;
+  --warning:      #9A6700;
+  --warning-text: #9A6700;
+  --info:         #0969DA;
+  --shadow:       0 4px 16px rgba(0,0,0,0.12);
+  --shadow-sm:    0 1px 4px rgba(0,0,0,0.08);
+}
+
+:root {
   --mono: 'JetBrains Mono', monospace;
   --sans: 'Inter', system-ui, sans-serif;
 
@@ -34,6 +64,16 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Smooth theme transitions — applied only to color/background properties */
+body, .btn, .form-input, .badge,
+[class*="module"] {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 html, body, #root {
@@ -119,12 +159,12 @@ body {
   font-family: var(--sans);
   flex-shrink: 0;
 }
-.badge-critical { background: var(--critical-dim); color: var(--critical); border: 1px solid rgba(218,54,51,0.4); }
-.badge-on-track { background: rgba(35,134,54,0.2); color: var(--success-text); border: 1px solid rgba(63,185,80,0.3); }
-.badge-at-risk  { background: rgba(158,106,3,0.2);  color: var(--warning-text); border: 1px solid rgba(227,179,65,0.3); }
+.badge-critical { background: var(--critical-dim); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 40%, transparent); }
+.badge-on-track { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success-text); border: 1px solid color-mix(in srgb, var(--success-text) 30%, transparent); }
+.badge-at-risk  { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning-text); border: 1px solid color-mix(in srgb, var(--warning-text) 30%, transparent); }
 .badge-pending  { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
-.badge-done     { background: rgba(31,111,235,0.2); color: #58A6FF; border: 1px solid rgba(88,166,255,0.3); }
-.badge-cp       { background: var(--critical-dim); color: var(--critical); border: 1px solid rgba(218,54,51,0.5); font-size: 8px; }
+.badge-done     { background: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); }
+.badge-cp       { background: var(--critical-dim); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 50%, transparent); font-size: 8px; }
 
 /* Form inputs */
 .form-label {
