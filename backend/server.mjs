@@ -31,7 +31,7 @@ if (!ws) db.prepare("INSERT INTO workspaces (name, schema_version) VALUES ('Truf
 console.log('✓ SQLite ready at .data/autopilot.sqlite');
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-const ADMIN_HASH = 'e3f47090f2ec633775b3058b412885d0eb99f53b02b6c1ac00f84580ce4867a7';
+const ADMIN_HASH = 'af76b3db969e180b4a6dc1db5662f956e0407b9e3272c554f3d7038a3d4f800c';
 
 function sha256(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
