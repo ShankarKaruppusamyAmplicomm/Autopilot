@@ -105,7 +105,7 @@ body {
 /* Buttons */
 .btn {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   padding: 5px 12px;
   border-radius: var(--radius-sm);
@@ -144,7 +144,7 @@ body {
   color: #fff;
 }
 
-.btn-sm { padding: 3px 8px; font-size: 10px; }
+.btn-sm { padding: 3px 8px; font-size: 14px; }
 
 /* Badge */
 .badge {
@@ -152,7 +152,7 @@ body {
   align-items: center;
   padding: 2px 6px;
   border-radius: 2px;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -164,12 +164,12 @@ body {
 .badge-at-risk  { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning-text); border: 1px solid color-mix(in srgb, var(--warning-text) 30%, transparent); }
 .badge-pending  { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
 .badge-done     { background: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); }
-.badge-cp       { background: var(--critical-dim); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 50%, transparent); font-size: 8px; }
+.badge-cp       { background: var(--critical-dim); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 50%, transparent); font-size: 14px; }
 
 /* Form inputs */
 .form-label {
   display: block;
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -186,7 +186,7 @@ body {
   padding: 7px 10px;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   outline: none;
   transition: border-color var(--transition);
 }

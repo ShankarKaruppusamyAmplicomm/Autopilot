@@ -33,7 +33,7 @@
 .logoMark {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   letter-spacing: -0.5px;
   color: var(--text);
   white-space: nowrap;
@@ -42,7 +42,7 @@
 
 .logoSub {
   font-family: var(--sans);
-  font-size: 10px;
+  font-size: 14px;
   color: var(--text-muted);
   margin-top: 2px;
   letter-spacing: 0.5px;
@@ -53,7 +53,7 @@
 .logoIcon {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--accent);
   letter-spacing: -0.5px;
 }
@@ -94,7 +94,7 @@
 }
 
 .sectionLabel {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -112,7 +112,7 @@
   color: var(--text-muted);
   cursor: pointer;
   transition: background var(--transition), color var(--transition);
-  font-size: 12px;
+  font-size: 14px;
   text-decoration: none;
   font-family: var(--mono);
   border-left: 2px solid transparent;
@@ -173,7 +173,7 @@
   color: var(--text-muted);
   cursor: pointer;
   transition: background var(--transition), color var(--transition);
-  font-size: 11px;
+  font-size: 14px;
   text-decoration: none;
   font-family: var(--sans);
   border-left: 2px solid transparent;
@@ -216,7 +216,7 @@
 }
 
 .wsLabel {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -233,7 +233,7 @@
 }
 
 .wsName {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -245,7 +245,7 @@
   border: none;
   cursor: pointer;
   font-family: var(--sans);
-  font-size: 10px;
+  font-size: 14px;
   color: var(--accent);
   padding: 0;
   flex-shrink: 0;
@@ -253,7 +253,7 @@
 .wsBtn:hover { text-decoration: underline; }
 
 .version {
-  font-size: 9px;
+  font-size: 14px;
   color: var(--text-dim);
   font-family: var(--mono);
   margin-top: 8px;
