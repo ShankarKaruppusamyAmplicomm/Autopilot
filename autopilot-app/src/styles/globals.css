@@ -9,8 +9,8 @@
   --border:       #30363D;
   --border-light: #21262D;
   --text:         #E6EDF3;
-  --text-muted:   #8B949E;
-  --text-dim:     #6E7681;
+  --text-muted:   #FFFFFF;
+  --text-dim:     #FFFFFF;
   --accent:       #6E40C9;
   --accent-hover: #7D52D4;
   --accent-dim:   #2D1F5E;
@@ -33,8 +33,8 @@
   --border:       #D0D7DE;
   --border-light: #E8EBEF;
   --text:         #1F2328;
-  --text-muted:   #656D76;
-  --text-dim:     #8C959F;
+  --text-muted:   #000000;
+  --text-dim:     #000000;
   --accent:       #6E40C9;
   --accent-hover: #5A30B0;
   --accent-dim:   #EDE9FF;
