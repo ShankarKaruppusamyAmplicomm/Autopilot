@@ -15,8 +15,8 @@ interface AuthPromptState {
 
   /** Call this to show the prompt. Resolves with the validated password. */
   requestAuth: () => Promise<string>;
-  /** Called by the modal on submit */
-  submit: (pw: string) => void;
+  /** Called by the modal on submit — verifies locally before resolving */
+  submit: (pw: string) => Promise<void>;
   /** Called by the modal on cancel */
   cancel: () => void;
   /** Set an error message inside the modal */
@@ -35,7 +35,12 @@ export const useAuthPrompt = create<AuthPromptState>((set, get) => ({
     });
   },
 
-  submit(pw) {
+  async submit(pw) {
+    const valid = await verifyPassword(pw);
+    if (!valid) {
+      set({ error: 'Incorrect password. Try again.' });
+      return;
+    }
     storePassword(pw);
     const resolve = get()._resolve;
     set({ visible: false, error: '', _resolve: null, _reject: null });
@@ -56,28 +61,33 @@ export const useAuthPrompt = create<AuthPromptState>((set, get) => ({
 /**
  * Wrap any admin API call with this helper.
  * - If the call succeeds: return the result.
- * - If 401/403: show the auth prompt, retry with the new password.
+ * - If 401/403: show the auth prompt, wait for a verified password, then retry once.
  * - If user cancels: throw.
+ * Uses a loop (not recursion) to prevent cascading retries.
  */
 export async function withAuth<T>(fn: () => Promise<T>): Promise<Exclude<T, { error: string }>> {
-  let result = await fn();
+  const result = await fn();
+  if (!isAuthError(result)) return result as Exclude<T, { error: string }>;
 
-  if (isAuthError(result)) {
-    const { requestAuth, setError } = useAuthPrompt.getState();
-    const pw = await requestAuth(); // throws if user cancels
+  // Need auth — loop until the user provides a correct password or cancels
+  const { requestAuth, setError } = useAuthPrompt.getState();
+
+  while (true) {
+    const pw = await requestAuth(); // throws (rejects) if user cancels
+
     const valid = await verifyPassword(pw);
     if (!valid) {
       setError('Incorrect password. Try again.');
-      return withAuth(fn);
+      continue;
     }
-    result = await fn();
-    if (isAuthError(result)) {
-      setError('Incorrect password. Try again.');
-      return withAuth(fn);
-    }
-  }
 
-  return result as Exclude<T, { error: string }>;
+    // Password verified locally — retry the API call once
+    const retried = await fn();
+    if (!isAuthError(retried)) return retried as Exclude<T, { error: string }>;
+
+    // Server still rejects (e.g. hash mismatch) — tell the user and loop
+    setError('Incorrect password. Try again.');
+  }
 }
 
 function isAuthError(result: unknown): boolean {

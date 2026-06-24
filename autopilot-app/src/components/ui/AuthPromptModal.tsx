@@ -5,23 +5,27 @@ import styles from './AuthPromptModal.module.css';
 export function AuthPromptModal() {
   const { visible, error, submit, cancel } = useAuthPrompt();
   const [pw, setPw] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (visible) {
       setPw('');
-      // Focus after paint
+      setVerifying(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [visible]);
 
   if (!visible) return null;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!pw.trim()) return;
-    submit(pw.trim());
-    setPw('');
+    if (!pw.trim() || verifying) return;
+    setVerifying(true);
+    await submit(pw.trim());
+    setVerifying(false);
+    // Only clear input if modal is still open (wrong password)
+    if (useAuthPrompt.getState().visible) setPw('');
   }
 
   return (
@@ -45,11 +49,11 @@ export function AuthPromptModal() {
           />
           {error && <div className={styles.error}>{error}</div>}
           <div className={styles.actions}>
-            <button type="button" className="btn btn-ghost" onClick={cancel}>
+            <button type="button" className="btn btn-ghost" onClick={cancel} disabled={verifying}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={!pw.trim()}>
-              Unlock
+            <button type="submit" className="btn btn-primary" disabled={!pw.trim() || verifying}>
+              {verifying ? 'Verifying…' : 'Unlock'}
             </button>
           </div>
         </form>
