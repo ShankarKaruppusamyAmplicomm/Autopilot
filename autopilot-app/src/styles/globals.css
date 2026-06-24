@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap');
 
 /* ── Dark theme (default) ─────────────────────────────────────────────────── */
 :root,
@@ -50,8 +50,8 @@
 }
 
 :root {
-  --mono: 'JetBrains Mono', monospace;
-  --sans: 'Inter', system-ui, sans-serif;
+  --mono: 'Roboto Mono', monospace;
+  --sans: 'Roboto', system-ui, sans-serif;
 
   --radius-sm: 4px;
   --radius-md: 6px;
