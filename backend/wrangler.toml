@@ -4,8 +4,8 @@ compatibility_date = "2026-06-24"
 compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
-binding = "DB"
+binding = "autopilot_db"
 database_name = "autopilot-db"
+database_id = "44da2b5f-0703-4d54-96ee-fe4e8f0c8ceb"
 # Run: npx wrangler d1 create autopilot-db
 # Then paste the returned database_id here before deploying.
-database_id = "PLACEHOLDER_REPLACE_AFTER_CREATION"
