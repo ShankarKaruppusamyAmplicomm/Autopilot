@@ -105,6 +105,12 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             <span className={styles.wsName}>{workspace?.name ?? '…'}</span>
             <button className={styles.wsBtn} onClick={handleRename}>rename</button>
           </div>
+          <div className={styles.version}>
+            v{__APP_VERSION__}
+            {__APP_COMMIT__ && (
+              <span className={styles.commit}> · {__APP_COMMIT__}</span>
+            )}
+          </div>
         </div>
       )}
     </aside>

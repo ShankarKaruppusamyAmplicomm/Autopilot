@@ -1,12 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'child_process';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('./package.json');
+
+function getCommit(): string {
+  try { return execSync('git rev-parse --short HEAD').toString().trim(); }
+  catch { return ''; }
+}
 
 // VITE_BASE overrides the base path. GitHub Pages needs /Autopilot/, Docker needs /.
 const base = process.env.VITE_BASE ?? (process.env.NODE_ENV === 'production' ? '/Autopilot/' : '/');
 
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __APP_COMMIT__: JSON.stringify(getCommit()),
+  },
   plugins: [
     react(),
     VitePWA({

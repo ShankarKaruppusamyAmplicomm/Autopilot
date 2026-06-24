@@ -251,3 +251,15 @@
   flex-shrink: 0;
 }
 .wsBtn:hover { text-decoration: underline; }
+
+.version {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  margin-top: 8px;
+  letter-spacing: 0.3px;
+}
+
+.commit {
+  opacity: 0.7;
+}
